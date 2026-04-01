@@ -1,0 +1,20 @@
+Django==5.1.5
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.4.0
+django-cors-headers==4.6.0
+social-auth-app-django==5.4.2
+python-dotenv==1.0.1
+
+# PDF Processing - Use simpler versions
+PyPDF2==3.0.1
+
+# AI/ML Integration - OpenAI only for now
+openai==1.57.0
+
+# Async Processing
+celery==5.4.0
+redis==5.2.0
+
+# Additional core dependencies
+requests==2.32.3
+urllib3==2.2.3
