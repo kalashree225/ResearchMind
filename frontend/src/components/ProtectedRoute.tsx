@@ -7,9 +7,8 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const isAuthenticated = authService.isAuthenticated();
-  const isDemoMode = localStorage.getItem('demo_mode') === 'true';
 
-  if (!isAuthenticated && !isDemoMode) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

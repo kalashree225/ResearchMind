@@ -18,18 +18,20 @@ def generate_clusters(request):
     n_clusters = request.data.get('n_clusters', 4)
     
     try:
+        # If paper IDs provided, fetch those specific papers; otherwise fetch all ready papers
         if paper_ids:
             papers = Paper.objects.filter(id__in=paper_ids)
         else:
             papers = Paper.objects.filter(status='ready')[:20]
         
+        # If no papers found, return graceful response with empty clusters
         if not papers.exists():
             return Response({
                 'error': 'No papers found for clustering',
                 'clusters': [],
                 'total_papers': 0,
                 'algorithm': algorithm
-            })
+            }, status=200)  # Return 200 OK, not 500, for empty dataset
         
         # Extract text content from papers
         paper_texts = []
@@ -106,8 +108,18 @@ def generate_clusters(request):
         })
         
     except Exception as e:
-        # Fallback to mock data if clustering fails
-        return _get_fallback_clusters(papers, algorithm)
+        # Log the error but don't crash - return graceful response
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Clustering error: {str(e)}")
+        
+        # Return empty clusters response instead of 500 error
+        return Response({
+            'error': f'Clustering failed: {str(e)}',
+            'clusters': [],
+            'total_papers': 0,
+            'algorithm': algorithm
+        }, status=200)
 
 
 def _perform_kmeans(tfidf_matrix, n_clusters):

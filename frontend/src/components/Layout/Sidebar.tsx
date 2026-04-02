@@ -1,22 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Map, History, PlusSquare, BrainCircuit, LogOut } from 'lucide-react';
+import { BookOpen, Map, History, PlusSquare, BrainCircuit } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useChatSessions } from '../../hooks/useChat';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useSimpleTheme } from '../../contexts/SimpleThemeContext';
 
 const cn = (...inputs: (string | undefined | null | false)[]) => twMerge(clsx(inputs));
 
 const Sidebar = () => {
   const { data: sessions } = useChatSessions();
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  const { theme } = useSimpleTheme() || { theme: { surface: '#ffffff', border: '#e0e0e0', primary: '#1976d2', text: '#000000', textSecondary: '#666666' } };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
   const links = [
     { icon: <PlusSquare size={18} />, label: 'New Project', path: '/dashboard' },
     { icon: <History size={18} />, label: 'History', path: '/history' },
@@ -25,12 +19,18 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-border flex flex-col pt-6 pb-4 shadow-sm">
+    <aside className="w-64 h-screen flex flex-col pt-6 pb-4 shadow-sm" style={{
+      backgroundColor: theme?.surface || '#ffffff',
+      borderRightColor: theme?.border || '#e0e0e0',
+      borderRightWidth: '1px'
+    }}>
       <div className="px-6 mb-8 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary-600 to-secondary flex items-center justify-center text-white shadow-md">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-md" style={{ backgroundColor: theme?.primary }}>
           <BrainCircuit size={18} />
         </div>
-        <span className="font-display font-bold text-xl tracking-wide text-text-primary">Research<span className="text-secondary">Mind</span></span>
+        <span className="font-display font-bold text-xl tracking-wide" style={{ color: theme?.text }}>
+          Research<span style={{ color: theme?.primary }}>Mind</span>
+        </span>
       </div>
       <nav className="flex-1 px-3 space-y-1">
         {links.map((link, idx) => (
@@ -38,13 +38,13 @@ const Sidebar = () => {
             key={idx}
             to={link.path}
             className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-primary-500/20 text-primary-600 border border-primary-500/30 shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover hover:border hover:border-border/50 border border-transparent'
-              )
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-200'
             }
+            style={({ isActive }: any) => ({
+              backgroundColor: isActive ? (theme?.primary || '#1976d2') + '20' : 'transparent',
+              color: isActive ? (theme?.primary || '#1976d2') : (theme?.textSecondary || '#666666'),
+              border: `1px solid ${isActive ? (theme?.primary || '#1976d2') + '40' : 'transparent'}`,
+            }) as React.CSSProperties}
           >
             {link.icon}
             {link.label}
@@ -77,13 +77,7 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="px-3 mt-auto space-y-2">
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
-        >
-          <LogOut size={18} />
-          <span className="font-medium">Sign Out</span>
-        </button>
+        {/* Logout button removed - no auth needed */}
       </div>
     </aside>
   );

@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db import models
 from papers.models import Paper, Citation, DocumentChunk
-from papers.tasks import extract_citations_task
+from papers.sync_tasks import extract_citations_sync
 import re
 from collections import defaultdict
 

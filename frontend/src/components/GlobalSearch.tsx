@@ -31,58 +31,47 @@ const GlobalSearch = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'papers' | 'authors' | 'keywords'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mock search data
-  const mockResults: SearchResult[] = [
-    {
-      id: '1',
-      type: 'paper',
-      title: 'Attention Is All You Need',
-      subtitle: 'Vaswani et al. 2017',
-      description: 'The dominant sequence transduction models...',
-      icon: <FileText size={16} />,
-      tags: ['Transformers', 'NLP', 'Attention'],
-      date: '2024-01-15'
-    },
-    {
-      id: '2',
-      type: 'author',
-      title: 'Dr. Jane Smith',
-      subtitle: 'Machine Learning Researcher',
-      description: 'Published 12 papers on deep learning...',
-      icon: <Users size={16} />,
-      tags: ['ML', 'Deep Learning'],
-      date: '2024-01-10'
-    },
-    {
-      id: '3',
-      type: 'keyword',
-      title: 'Neural Networks',
-      subtitle: '245 papers',
-      description: 'Research papers related to neural architectures...',
-      icon: <Hash size={16} />,
-      tags: ['AI', 'Deep Learning', 'Networks'],
-      date: '2024-01-08'
-    }
-  ];
-
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
     if (query.trim()) {
       setIsLoading(true);
-      // Simulate search delay
-      setTimeout(() => {
-        const filteredResults = mockResults.filter(result =>
-          result.title.toLowerCase().includes(query.toLowerCase()) ||
-          result.description?.toLowerCase().includes(query.toLowerCase())
+      try {
+        // Call real papers API
+        const response = await fetch(
+          `http://localhost:8000/api/papers/list/?search=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+          }
         );
-        setResults(filteredResults);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const papers = Array.isArray(data) ? data : data.results || [];
+          
+          // Transform papers to search results
+          const paperResults: SearchResult[] = papers.map((paper: any) => ({
+            id: paper.id,
+            type: 'paper' as const,
+            title: paper.title,
+            subtitle: paper.authors ? `${paper.authors.split(',')[0]} et al.` : 'Unknown Author',
+            description: paper.abstract || paper.summary || '',
+            icon: <FileText size={16} />,
+            tags: paper.tags || [],
+            date: paper.uploaded_at || paper.created_at
+          }));
+          
+          setResults(paperResults);
+        }
         
         // Add to history
         if (query.trim() && !history.find(h => h.query === query)) {
           setHistory(prev => [{ query, timestamp: new Date(), type: 'search' }, ...prev.slice(0, 9)]);
         }
-        
-        setIsLoading(false);
-      }, 500);
+      } catch (error) {
+        console.error('Search error:', error);
+      }
+      setIsLoading(false);
     }
   }, [query, history]);
 

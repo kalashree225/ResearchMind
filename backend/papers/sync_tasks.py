@@ -36,8 +36,8 @@ def process_pdf_sync(paper_id: str):
             paper.status = 'failed'
             paper.processing_error = str(exc)
             paper.save()
-        except:
-            pass
+        except Exception as save_error:
+            print(f'Error saving failed paper status: {save_error}')
         
         return {'status': 'failed', 'paper_id': paper_id, 'error': str(exc)}
 
@@ -100,8 +100,8 @@ def generate_embeddings_sync(paper_id: str):
             paper.status = 'failed'
             paper.processing_error = f"Embedding generation failed: {str(exc)}"
             paper.save()
-        except:
-            pass
+        except Exception as save_error:
+            print(f'Error updating paper status: {save_error}')
         
         return {'status': 'failed', 'paper_id': paper_id, 'error': str(exc)}
 
@@ -187,18 +187,37 @@ def _extract_citations_from_text(text: str, paper: Paper):
             citations.append(citation)
     
     # Simple title pattern (very basic)
-    # This is a placeholder - real citation extraction is much more complex
-    title_pattern = r'\[([^\]]+)\]'
+    # Extract citations using multiple patterns
+    # Pattern 1: Square brackets [Title or citation reference]
+    title_pattern = r'\[([^\[\]]{10,200})\]'
     title_matches = re.findall(title_pattern, text)
     
-    for title in title_matches[:5]:  # Limit to avoid false positives
-        if len(title) > 10 and len(title) < 200:  # Reasonable title length
+    # Pattern 2: Author Year format (Smith et al. 2020)
+    author_year_pattern = r'([A-Z][a-z]+(?:\s+et\s+al\.)?)\s+\(20\d{2}\)'
+    author_matches = re.findall(author_year_pattern, text)
+    
+    # Process title-based citations
+    seen_titles = set()
+    for title in title_matches[:8]:
+        title_clean = title.strip()
+        if 10 < len(title_clean) < 200 and title_clean not in seen_titles:
+            seen_titles.add(title_clean)
             citation, created = Citation.objects.get_or_create(
                 citing_paper=paper,
-                cited_title=title,
+                cited_title=title_clean,
                 defaults={}
             )
             if created:
                 citations.append(citation)
+    
+    # Process author-year citations  
+    for author_year in author_matches[:5]:
+        citation, created = Citation.objects.get_or_create(
+            citing_paper=paper,
+            cited_title=author_year,
+            defaults={}
+        )
+        if created:
+            citations.append(citation)
     
     return citations

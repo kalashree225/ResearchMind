@@ -66,13 +66,10 @@ const LandingPage = () => {
                 Start Free <ArrowRight size={20} />
               </button>
               <button 
-                onClick={() => {
-                  localStorage.setItem('demo_mode', 'true');
-                  navigate('/dashboard');
-                }}
+                onClick={() => navigate('/login')}
                 className="px-8 py-4 glass-panel hover:bg-surface-hover text-text-primary rounded-xl font-semibold transition-all"
               >
-                Try Demo
+                Sign In
               </button>
             </div>
           </motion.div>

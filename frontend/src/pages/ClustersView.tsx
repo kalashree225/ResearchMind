@@ -2,11 +2,12 @@ import { motion } from 'framer-motion';
 import { Map, Zap, Layers, Share2, Filter, TrendingUp, BarChart3, Settings, Download, Palette } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useGenerateClusters } from '../hooks/useTopics';
-import { useMaterialTheme } from '../contexts/MaterialThemeContext';
+import { useSimpleTheme } from '../contexts/SimpleThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { papersService } from '../services/papers';
 
 const ClustersView = () => {
-  const { theme } = useMaterialTheme();
+  const { theme } = useSimpleTheme();
   const navigate = useNavigate();
   const [activeCluster, setActiveCluster] = useState<number | null>(null);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('umap');
@@ -14,7 +15,34 @@ const ClustersView = () => {
   const [showLabels, setShowLabels] = useState(true);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [colorScheme, setColorScheme] = useState('material');
+  const [paperCount, setPaperCount] = useState(0);
   const { mutate: generateClusters, data: clusterData, isPending } = useGenerateClusters();
+
+  // Fetch papers count on mount
+  useEffect(() => {
+    papersService.listPapers()
+      .then(papers => setPaperCount(papers.length))
+      .catch(() => setPaperCount(0));
+  }, []);
+
+  const clusters = clusterData?.clusters || [];
+
+  const handleGenerateClusters = async () => {
+    try {
+      const papers = await papersService.listPapers();
+      if (papers.length === 0) {
+        alert('No papers found. Please upload some papers first.');
+        return;
+      }
+      
+      setPaperCount(papers.length);
+      const paperIds = papers.map(p => String(p.id));
+      generateClusters(paperIds);
+    } catch (error) {
+      console.error('Failed to fetch papers:', error);
+      alert('Error loading papers. Please try again.');
+    }
+  };
 
   // Color schemes for clusters
   const colorSchemes = {
@@ -26,90 +54,12 @@ const ClustersView = () => {
 
   const clusterColors = colorSchemes[colorScheme as keyof typeof colorSchemes];
 
-  useEffect(() => {
-    // Load paper IDs from library or use all papers
-    const paperIds = ['1', '2', '3', '4', '5']; // Mock paper IDs
-    generateClusters(paperIds);
-  }, [generateClusters]);
-
-  const clusters = clusterData?.clusters || [
-    {
-      id: 1,
-      name: 'Neural Networks',
-      x: 25,
-      y: 30,
-      size: 1.2,
-      papers: 12,
-      density: 0.85,
-      keywords: ['Deep Learning', 'Backpropagation', 'CNN', 'RNN', 'Transformers'],
-      paperList: [
-        { id: '1', title: 'Attention Is All You Need', authors: 'Vaswani et al.' },
-        { id: '2', title: 'BERT: Pre-training of Deep Bidirectional Transformers', authors: 'Devlin et al.' },
-        { id: '3', title: 'GPT-3: Language Models are Few-Shot Learners', authors: 'Brown et al.' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Natural Language Processing',
-      x: 65,
-      y: 25,
-      size: 1.0,
-      papers: 8,
-      density: 0.72,
-      keywords: ['BERT', 'GPT', 'Tokenization', 'Attention', 'Embeddings'],
-      paperList: [
-        { id: '4', title: 'Word2Vec: Distributed Representations of Words', authors: 'Mikolov et al.' },
-        { id: '5', title: 'GloVe: Global Vectors for Word Representation', authors: 'Pennington et al.' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Computer Vision',
-      x: 45,
-      y: 60,
-      size: 0.9,
-      papers: 6,
-      density: 0.68,
-      keywords: ['CNN', 'Object Detection', 'Image Segmentation', 'YOLO', 'ResNet'],
-      paperList: [
-        { id: '6', title: 'Deep Residual Learning for Image Recognition', authors: 'He et al.' },
-        { id: '7', title: 'You Only Look Once: Unified, Real-Time Object Detection', authors: 'Redmon et al.' }
-      ]
-    },
-    {
-      id: 4,
-      name: 'Reinforcement Learning',
-      x: 15,
-      y: 70,
-      size: 0.8,
-      papers: 4,
-      density: 0.61,
-      keywords: ['Q-Learning', 'Policy Gradients', 'Actor-Critic', 'PPO', 'DQN'],
-      paperList: [
-        { id: '8', title: 'Playing Atari with Deep Reinforcement Learning', authors: 'Mnih et al.' }
-      ]
-    },
-    {
-      id: 5,
-      name: 'Graph Neural Networks',
-      x: 75,
-      y: 55,
-      size: 0.7,
-      papers: 3,
-      density: 0.55,
-      keywords: ['GCN', 'Graph Attention', 'Node Classification', 'Link Prediction'],
-      paperList: [
-        { id: '9', title: 'Semi-Supervised Classification with Graph Convolutional Networks', authors: 'Kipf & Welling' }
-      ]
-    }
-  ];
-
   const handleClusterClick = (clusterId: number) => {
     setActiveCluster(clusterId);
     const cluster = clusters.find(c => c.id === clusterId);
-    if (cluster && cluster.paperList.length > 0) {
+    if (cluster && 'paper_ids' in cluster && cluster.paper_ids && cluster.paper_ids.length > 0) {
       // Navigate to first paper in cluster
-      navigate(`/chat/${cluster.paperList[0].id}`);
+      navigate(`/chat/${cluster.paper_ids[0]}`);
     }
   };
 
@@ -118,22 +68,22 @@ const ClustersView = () => {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: theme.background, color: theme.onBackground }}>
+    <div className="min-h-screen p-6" style={{ backgroundColor: theme.background, color: theme.text }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: theme.onBackground }}>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: theme.text }}>
             Advanced Topic Clustering
           </h1>
-          <p style={{ color: theme.onBackground + '99' }}>
+          <p style={{ color: theme.textSecondary }}>
             Discover research patterns and relationships through AI-powered clustering
           </p>
         </div>
 
         {/* Controls */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
-            <label className="block text-sm font-medium mb-2" style={{ color: theme.onSurface }}>
+          <div style={{ backgroundColor: theme.surface, borderColor: theme.border }} className="p-4 rounded-lg border">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.text }}>
               Algorithm
             </label>
             <select
@@ -142,8 +92,8 @@ const ClustersView = () => {
               className="w-full p-2 rounded border"
               style={{ 
                 backgroundColor: theme.background, 
-                borderColor: theme.elevation.level2,
-                color: theme.onBackground
+                borderColor: theme.border,
+                color: theme.text
               }}
             >
               <option value="umap">UMAP</option>
@@ -153,8 +103,8 @@ const ClustersView = () => {
             </select>
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
-            <label className="block text-sm font-medium mb-2" style={{ color: theme.onSurface }}>
+          <div style={{ backgroundColor: theme.surface, borderColor: theme.border }} className="p-4 rounded-lg border">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.text }}>
               Cluster Count
             </label>
             <input
@@ -166,14 +116,14 @@ const ClustersView = () => {
               className="w-full p-2 rounded border"
               style={{ 
                 backgroundColor: theme.background, 
-                borderColor: theme.elevation.level2,
-                color: theme.onBackground
+                borderColor: theme.border,
+                color: theme.text
               }}
             />
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
-            <label className="block text-sm font-medium mb-2" style={{ color: theme.onSurface }}>
+          <div style={{ backgroundColor: theme.surface, borderColor: theme.border }} className="p-4 rounded-lg border">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.text }}>
               Color Scheme
             </label>
             <select
@@ -182,8 +132,8 @@ const ClustersView = () => {
               className="w-full p-2 rounded border"
               style={{ 
                 backgroundColor: theme.background, 
-                borderColor: theme.elevation.level2,
-                color: theme.onBackground
+                borderColor: theme.border,
+                color: theme.text
               }}
             >
               <option value="material">Material Design</option>
@@ -193,8 +143,8 @@ const ClustersView = () => {
             </select>
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
-            <label className="block text-sm font-medium mb-2" style={{ color: theme.onSurface }}>
+          <div style={{ backgroundColor: theme.surface, borderColor: theme.border }} className="p-4 rounded-lg border">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.text }}>
               View Mode
             </label>
             <div className="flex gap-2">
@@ -206,8 +156,8 @@ const ClustersView = () => {
                     : ''
                 }`}
                 style={{ 
-                  backgroundColor: viewMode === '2d' ? theme.primary : theme.elevation.level1,
-                  color: viewMode === '2d' ? theme.onPrimary : theme.onSurface
+                  backgroundColor: viewMode === '2d' ? theme.primary : theme.surface,
+                  color: viewMode === '2d' ? '#ffffff' : theme.text
                 }}
               >
                 2D
@@ -220,8 +170,8 @@ const ClustersView = () => {
                     : ''
                 }`}
                 style={{ 
-                  backgroundColor: viewMode === '3d' ? theme.primary : theme.elevation.level1,
-                  color: viewMode === '3d' ? theme.onPrimary : theme.onSurface
+                  backgroundColor: viewMode === '3d' ? theme.primary : theme.surface,
+                  color: viewMode === '3d' ? '#ffffff' : theme.text
                 }}
               >
                 3D
@@ -233,9 +183,9 @@ const ClustersView = () => {
         {/* Main Visualization */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cluster Visualization */}
-          <div className="lg:col-span-2" style={{ backgroundColor: theme.surface }} className="p-6 rounded-xl border" style={{ borderColor: theme.elevation.level2 }}>
+          <div className="lg:col-span-2 p-6 rounded-xl border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold" style={{ color: theme.onSurface }}>
+              <h2 className="text-xl font-semibold" style={{ color: theme.text }}>
                 Cluster Visualization
               </h2>
               <div className="flex gap-2">
@@ -243,25 +193,31 @@ const ClustersView = () => {
                   onClick={() => setShowLabels(!showLabels)}
                   className="px-3 py-1 rounded text-sm"
                   style={{ 
-                    backgroundColor: showLabels ? theme.primary : theme.elevation.level1,
-                    color: showLabels ? theme.onPrimary : theme.onSurface
+                    backgroundColor: showLabels ? theme.primary : theme.surface,
+                    color: showLabels ? '#ffffff' : theme.text
                   }}
                 >
                   {showLabels ? 'Hide Labels' : 'Show Labels'}
                 </button>
                 <button
-                  onClick={() => generateClusters(['1', '2', '3', '4', '5'])}
+                  onClick={handleGenerateClusters}
                   disabled={isPending}
                   className="px-3 py-1 rounded text-sm text-white"
                   style={{ backgroundColor: theme.primary }}
                 >
-                  {isPending ? 'Generating...' : 'Regenerate'}
+                  {isPending ? 'Generating...' : (clusters.length > 0 ? 'Regenerate' : 'Generate Clusters')}
                 </button>
               </div>
             </div>
 
             {/* SVG Visualization */}
-            <div className="relative h-96 border rounded-lg" style={{ borderColor: theme.elevation.level2, backgroundColor: theme.background }}>
+            <div className="relative h-96 border rounded-lg flex items-center justify-center" style={{ borderColor: theme.border, backgroundColor: theme.background }}>
+              {clusters.length === 0 ? (
+                <div className="text-center" style={{ color: theme.textSecondary }}>
+                  <p className="text-lg font-medium">No clusters generated yet</p>
+                  <p className="text-sm mt-2">Upload some papers first to generate clusters</p>
+                </div>
+              ) : (
               <svg width="100%" height="100%" viewBox="0 0 100 100">
                 {/* Connection Lines */}
                 {clusters.map((cluster, i) => 
@@ -278,7 +234,7 @@ const ClustersView = () => {
                           y1={cluster.y}
                           x2={otherCluster.x}
                           y2={otherCluster.y}
-                          stroke={theme.elevation.level3}
+                          stroke={theme.border}
                           strokeWidth="0.5"
                           strokeDasharray="2,2"
                         />
@@ -311,7 +267,7 @@ const ClustersView = () => {
                         y={cluster.y + cluster.size * 8 + 5}
                         textAnchor="middle"
                         fontSize="3"
-                        fill={theme.onBackground}
+                        fill={theme.text}
                         style={{ pointerEvents: 'none' }}
                       >
                         {cluster.name}
@@ -320,12 +276,13 @@ const ClustersView = () => {
                   </g>
                 ))}
               </svg>
+              )}
             </div>
           </div>
 
           {/* Cluster Details */}
-          <div style={{ backgroundColor: theme.surface }} className="p-6 rounded-xl border" style={{ borderColor: theme.elevation.level2 }}>
-            <h2 className="text-xl font-semibold mb-4" style={{ color: theme.onSurface }}>
+          <div className="p-6 rounded-xl border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: theme.text }}>
               Cluster Details
             </h2>
             
@@ -342,17 +299,17 @@ const ClustersView = () => {
                           {cluster.name}
                         </h3>
                         <div className="space-y-2 text-sm">
-                          <p style={{ color: theme.onSurface + '99' }}>
+                          <p style={{ color: theme.textSecondary }}>
                             <strong>Papers:</strong> {cluster.papers}
                           </p>
-                          <p style={{ color: theme.onSurface + '99' }}>
+                          <p style={{ color: theme.textSecondary }}>
                             <strong>Density:</strong> {(cluster.density * 100).toFixed(1)}%
                           </p>
                         </div>
                       </div>
                       
                       <div>
-                        <h4 className="font-medium mb-2" style={{ color: theme.onSurface }}>
+                        <h4 className="font-medium mb-2" style={{ color: theme.text }}>
                           Keywords
                         </h4>
                         <div className="flex flex-wrap gap-1">
@@ -372,7 +329,7 @@ const ClustersView = () => {
                       </div>
 
                       <div>
-                        <h4 className="font-medium mb-2" style={{ color: theme.onSurface }}>
+                        <h4 className="font-medium mb-2" style={{ color: theme.text }}>
                           Papers in Cluster
                         </h4>
                         <div className="space-y-2">
@@ -383,12 +340,12 @@ const ClustersView = () => {
                               className="w-full text-left p-2 rounded border text-sm hover:opacity-80 transition-opacity"
                               style={{ 
                                 backgroundColor: theme.background,
-                                borderColor: theme.elevation.level2,
-                                color: theme.onSurface
+                                borderColor: theme.border,
+                                color: theme.text
                               }}
                             >
                               <div className="font-medium">{paper.title}</div>
-                              <div className="text-xs" style={{ color: theme.onSurface + '80' }}>
+                              <div className="text-xs" style={{ color: theme.textSecondary }}>
                                 {paper.authors}
                               </div>
                             </button>
@@ -400,9 +357,8 @@ const ClustersView = () => {
                 })()}
               </div>
             ) : (
-              <div className="text-center py-8" style={{ color: theme.onSurface + '60' }}>
-                <Map size={48} className="mx-auto mb-4" />
-                <p>Click on a cluster to view details</p>
+              <div className="text-center py-8" style={{ color: theme.textSecondary }}>
+                <p>Select a cluster from the visualization to view details</p>
               </div>
             )}
           </div>
@@ -410,64 +366,64 @@ const ClustersView = () => {
 
         {/* Statistics */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.primary + '20' }}>
                 <Layers size={20} style={{ color: theme.primary }} />
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: theme.onSurface }}>
+                <p className="text-2xl font-bold" style={{ color: theme.text }}>
                   {clusters.length}
                 </p>
-                <p className="text-sm" style={{ color: theme.onSurface + '80' }}>
+                <p className="text-sm" style={{ color: theme.textSecondary }}>
                   Total Clusters
                 </p>
               </div>
             </div>
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.secondary + '20' }}>
-                <TrendingUp size={20} style={{ color: theme.secondary }} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.primary + '20' }}>
+                <TrendingUp size={20} style={{ color: theme.primary }} />
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: theme.onSurface }}>
+                <p className="text-2xl font-bold" style={{ color: theme.text }}>
                   {clusters.reduce((sum, c) => sum + c.papers, 0)}
                 </p>
-                <p className="text-sm" style={{ color: theme.onSurface + '80' }}>
+                <p className="text-sm" style={{ color: theme.textSecondary }}>
                   Total Papers
                 </p>
               </div>
             </div>
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#4CAF50' + '20' }}>
                 <BarChart3 size={20} style={{ color: '#4CAF50' }} />
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: theme.onSurface }}>
+                <p className="text-2xl font-bold" style={{ color: theme.text }}>
                   {(clusters.reduce((sum, c) => sum + c.density, 0) / clusters.length * 100).toFixed(1)}%
                 </p>
-                <p className="text-sm" style={{ color: theme.onSurface + '80' }}>
+                <p className="text-sm" style={{ color: theme.textSecondary }}>
                   Avg Density
                 </p>
               </div>
             </div>
           </div>
 
-          <div style={{ backgroundColor: theme.surface }} className="p-4 rounded-lg border" style={{ borderColor: theme.elevation.level2 }}>
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.error + '20' }}>
-                <Zap size={20} style={{ color: theme.error }} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#ef4444' + '20' }}>
+                <Zap size={20} style={{ color: '#ef4444' }} />
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: theme.onSurface }}>
+                <p className="text-2xl font-bold" style={{ color: theme.text }}>
                   {selectedAlgorithm.toUpperCase()}
                 </p>
-                <p className="text-sm" style={{ color: theme.onSurface + '80' }}>
+                <p className="text-sm" style={{ color: theme.textSecondary }}>
                   Algorithm
                 </p>
               </div>

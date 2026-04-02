@@ -11,8 +11,8 @@ urlpatterns = [
     path('api/auth/', include('users.urls')),
     path('api/papers/', include('papers.urls')),
     path('api/chat/', include('chat.urls')),
-    # path('api/citations/', include('citations.urls')),  # Temporarily disabled for demo
-    # path('api/topics/', include('topics.urls')),      # Temporarily disabled for demo
+    path('api/citations/', include('citations.urls')),
+    path('api/topics/', include('topics.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

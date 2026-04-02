@@ -1,11 +1,34 @@
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { BrainCircuit, ArrowRight, AlertCircle } from 'lucide-react';
+import { BrainCircuit, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
+import { useState } from 'react';
+import { authService } from '../../services/auth';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await authService.login({ email, password });
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Login failed. Check credentials.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
@@ -39,34 +62,70 @@ const LoginPage = () => {
 
         {/* Form Card */}
         <div className="glass-panel rounded-3xl p-8 border border-border/50 shadow-2xl">
-          <div className="mb-6">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 rounded-xi bg-red-500/10 border border-red-500/20">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-red-300">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailLogin} className="mb-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
             <button
-              onClick={() => {
-                localStorage.setItem('demo_mode', 'true');
-                navigate('/dashboard');
-              }}
-              className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2"
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-primary-600 hover:bg-primary-500 disabled:bg-gray-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2"
             >
-              Continue to Dashboard <ArrowRight size={18} />
+              {loading ? 'Signing in...' : 'Sign In'} {!loading && <ArrowRight size={18} />}
             </button>
-          </div>
+          </form>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-surface text-text-muted">Or sign in with</span>
-            </div>
-          </div>
-
-          <div className="mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-            <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-200">
-                <p className="font-semibold">OAuth Setup Required</p>
-                <p className="text-yellow-300/80">Configure credentials in backend settings</p>
-              </div>
+              <span className="px-2 bg-surface text-text-muted">Or continue with</span>
             </div>
           </div>
 

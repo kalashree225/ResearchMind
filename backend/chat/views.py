@@ -7,6 +7,7 @@ from django.utils import timezone
 from datetime import datetime
 import json
 from .models import ChatSession, ChatMessage
+from papers.models import Paper
 from papers.services.simple_ai_service import SimpleAIService
 import uuid
 

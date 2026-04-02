@@ -21,25 +21,44 @@ interface UserProfile {
 }
 
 const UserProfile = () => {
-  const { theme, setTheme } = useSimpleTheme();
+  const { theme, setTheme, themeName } = useSimpleTheme();
   const { addNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'security'>('profile');
   
+  // Create color mapping from theme
+  const colors = {
+    bgCard: theme.surface,
+    border: `1px solid ${theme.border}`,
+    borderColor: theme.border,
+    borderLight: `1px solid ${theme.border}`,
+    shadow: '0 2px 8px rgba(0,0,0,0.1)',
+    primary: theme.primary,
+    bg: theme.background,
+    bgSecondary: theme.surface,
+    text: theme.text,
+    textMuted: theme.textSecondary,
+    textSecondary: theme.textSecondary,
+    success: '#10b981',
+    successHover: '#059669',
+    primaryHover: 'rgba(0,0,0,0.1)',
+    errorLight: 'rgba(239, 68, 68, 0.1)',
+  };
+  
   const [profile, setProfile] = useState<UserProfile>({
     id: '1',
-    name: 'Dr. Jane Smith',
-    email: 'jane.smith@university.edu',
+    name: 'User',
+    email: 'user@example.com',
     avatar: '',
-    institution: 'Stanford University',
-    bio: 'Research scientist specializing in machine learning and natural language processing.',
+    institution: '',
+    bio: '',
     preferences: {
       emailNotifications: true,
       pushNotifications: true,
       autoSave: true,
       language: 'en',
-      timezone: 'UTC-8'
+      timezone: 'UTC'
     }
   });
 

@@ -45,7 +45,7 @@ const MainLayout = () => {
         </header>
         
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           <Outlet />
         </div>
       </main>

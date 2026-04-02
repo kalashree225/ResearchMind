@@ -52,26 +52,26 @@ const Dashboard = () => {
   const stats = [
     {
       label: 'Total Papers',
-      value: '24',
-      change: '+12%',
+      value: '0',
+      change: '0%',
       icon: BookOpen
     },
     {
       label: 'Active Projects',
-      value: '8',
-      change: '+25%',
+      value: '0',
+      change: '0%',
       icon: BrainCircuit
     },
     {
       label: 'Collaborations',
-      value: '156',
-      change: '+8%',
+      value: '0',
+      change: '0%',
       icon: Users
     },
     {
       label: 'Citations',
-      value: '1,247',
-      change: '+18%',
+      value: '0',
+      change: '0%',
       icon: TrendingUp
     }
   ];
@@ -185,36 +185,9 @@ const Dashboard = () => {
             Recent Activity
           </h2>
           <div className="space-y-4">
-            {[
-              { title: 'Paper uploaded successfully', time: '2 minutes ago', type: 'success' },
-              { title: 'New citation detected', time: '1 hour ago', type: 'info' },
-              { title: 'Analysis completed', time: '3 hours ago', type: 'success' }
-            ].map((activity, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-4 p-4 rounded-lg"
-                style={{
-                  backgroundColor: theme.background,
-                  borderLeft: `3px solid ${activity.type === 'success' ? '#10b981' : activity.type === 'info' ? '#3b82f6' : '#f59e0b'}`
-                }}
-              >
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: activity.type === 'success' ? '#10b981' : activity.type === 'info' ? '#3b82f6' : '#f59e0b' }}
-                />
-                <div className="flex-1">
-                  <div className="font-medium" style={{ color: theme.text }}>
-                    {activity.title}
-                  </div>
-                  <div className="text-sm" style={{ color: theme.textSecondary }}>
-                    {activity.time}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <div className="text-center py-8" style={{ color: theme.textSecondary }}>
+              <p>No recent activity yet. Start by uploading a paper!</p>
+            </div>
           </div>
         </div>
 

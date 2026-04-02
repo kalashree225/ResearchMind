@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { BookOpen, Search, Filter, DownloadCloud, TrendingUp, Eye, Share2, MoreVertical, Grid, List, ExternalLink } from 'lucide-react';
 import { usePapers, useDeletePaper } from '../hooks/usePapers';
 import { useNavigate } from 'react-router-dom';
-import { useMaterialTheme } from '../contexts/MaterialThemeContext';
+import { useSimpleTheme } from '../contexts/SimpleThemeContext';
 
 const LibraryView = () => {
   const navigate = useNavigate();
-  const { theme } = useMaterialTheme();
+  const { theme } = useSimpleTheme();
   const { data: papers } = usePapers();
   const deletePaper = useDeletePaper();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -17,55 +17,10 @@ const LibraryView = () => {
   const [selectedPapers, setSelectedPapers] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const mockPapers = [
-    {
-      id: '1',
-      title: 'Attention Is All You Need',
-      authors: ['Vaswani, A.', 'Shazeer, N.', 'Parmar, N.'],
-      abstract: 'The dominant sequence transduction models...',
-      status: 'ready',
-      uploaded_at: '2024-01-15',
-      citations: 15420,
-      journal: 'NeurIPS',
-      year: 2017,
-      doi: '10.5555/2017.99991',
-      tags: ['Transformers', 'Attention', 'NLP'],
-      bookmarked: true,
-      notes: 'Foundational paper on attention mechanisms'
-    },
-    {
-      id: '2',
-      title: 'BERT: Pre-training of Deep Bidirectional Transformers',
-      authors: ['Devlin, J.', 'Chang, M.', 'Lee, K.'],
-      abstract: 'We introduce a new language representation model...',
-      status: 'ready',
-      uploaded_at: '2024-01-20',
-      citations: 8970,
-      journal: 'NAACL',
-      year: 2018,
-      doi: '10.18653/v1/2019.14235',
-      tags: ['BERT', 'Pre-training', 'NLP'],
-      bookmarked: false,
-      notes: ''
-    },
-    {
-      id: '3',
-      title: 'Generative Adversarial Networks',
-      authors: ['Goodfellow, I.', 'Pouget-Abadie, J.'],
-      abstract: 'We propose a new framework for estimating generative models...',
-      status: 'processing',
-      uploaded_at: '2024-02-01',
-      citations: 23450,
-      journal: 'NIPS',
-      year: 2014,
-      doi: '10.1109/CVPR.2014.590',
-      tags: ['GANs', 'Deep Learning', 'Computer Vision'],
-      bookmarked: true,
-      notes: 'Revolutionary work in generative modeling'
-    }
-  ];
+  // Use real papers from API, fallback to empty array for now
+  const papersList = papers && Array.isArray(papers) ? papers : [];
 
-  const filteredPapers = mockPapers.filter(paper => {
+  const filteredPapers = papersList.filter(paper => {
     const matchesSearch = !searchQuery || 
       paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       paper.authors.some(a => a.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -295,26 +250,24 @@ const LibraryView = () => {
                       {paper.authors.length > 2 && ' et al.'}
                     </span>
                     <span className="text-xs text-text-muted">•</span>
-                    <span className="text-xs text-text-muted">{paper.year}</span>
-                    <span className="text-xs text-text-muted">•</span>
-                    <span className="text-xs text-text-muted">{paper.journal}</span>
+                    <span className="text-xs text-text-muted">{new Date(paper.uploaded_at).getFullYear()}</span>
                   </div>
                   
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {paper.tags.map(tag => (
-                      <span key={tag} className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  {/* Abstract */}
+                  <p className="text-sm text-text-secondary mb-4 line-clamp-2">
+                    {paper.abstract || 'No abstract available'}
+                  </p>
                   
                   {/* Metrics */}
-                  <div className="flex items-center justify-between text-xs text-text-muted">
+                  <div className="flex items-center justify-between text-xs text-text-muted mt-4">
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
+                        <BookOpen size={12} />
+                        {paper.total_pages || '0'} pages
+                      </span>
+                      <span className="flex items-center gap-1">
                         <TrendingUp size={12} />
-                        {paper.citations?.toLocaleString() || '0'} citations
+                        {paper.chunk_count || '0'} chunks
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -389,12 +342,12 @@ const LibraryView = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-muted">{paper.journal}</td>
-                    <td className="px-6 py-4 text-sm text-text-muted">{paper.year}</td>
+                    <td className="px-6 py-4 text-sm text-text-muted">-</td>
+                    <td className="px-6 py-4 text-sm text-text-muted">{new Date(paper.uploaded_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-sm text-text-muted">
                       <span className="flex items-center gap-1">
-                        <TrendingUp size={12} />
-                        {paper.citations?.toLocaleString() || '0'}
+                        <BookOpen size={12} />
+                        {paper.chunk_count || '0'}
                       </span>
                     </td>
                     <td className="px-6 py-4">

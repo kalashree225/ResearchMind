@@ -64,12 +64,13 @@ const ChatView = () => {
   }, [id]);
 
   const handleSendMessage = useCallback(() => {
-    if (input.trim() && !isStreaming) {
+    if (input.trim() && !isStreaming && id) {
       setIsStreaming(true);
-      wsRef.current?.sendMessage(input);
+      const paperIds = session?.papers?.map(p => p.id) || [id];
+      wsRef.current?.sendMessage(input, paperIds);
       setInput('');
     }
-  }, [input, isStreaming]);
+  }, [input, isStreaming, id, session]);
 
   // Mock D3 Force Graph Effect
   useEffect(() => {
