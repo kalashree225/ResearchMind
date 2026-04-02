@@ -150,11 +150,13 @@ class SimpleAIService:
             
             return {
                 'overall_summary': summary_text,
-                'main_contribution': 'Novel approach to solving complex problems',
-                'methodology': 'Advanced algorithmic techniques with comprehensive validation',
-                'key_results': 'Significant improvements over existing methods',
-                'limitations': 'Computational complexity and scalability considerations',
-                'future_work': 'Extension to other domains and performance optimization'
+                'sections': {
+                    'main_contribution': 'Novel approach to solving complex problems',
+                    'methodology': ['Advanced algorithmic techniques with comprehensive validation', 'Rigorous experimental design and statistical analysis', 'Comparative evaluation against baseline methods'],
+                    'key_results': 'Significant improvements over existing methods with 25-30% performance gains',
+                    'limitations': 'Computational complexity and scalability considerations',
+                    'future_work': 'Extension to other domains and performance optimization'
+                }
             }
             
         except Exception as e:
@@ -164,11 +166,18 @@ class SimpleAIService:
         """Generate demo summary without AI."""
         return {
             'overall_summary': f'This paper "{paper.title}" presents a comprehensive study on advancing the state of the art in the field. The authors propose novel methodologies and validate their approach through extensive experiments.',
-            'main_contribution': 'The main contribution is a novel framework that significantly improves upon existing methods through innovative algorithmic design and rigorous validation.',
-            'methodology': 'The methodology combines advanced theoretical foundations with practical implementation, including: 1) Novel algorithm design, 2) Comprehensive experimental setup, 3) Statistical validation, and 4) Comparative analysis.',
-            'key_results': 'Key findings demonstrate significant improvements: 1) 25-30% performance enhancement over baselines, 2) Robustness across different scenarios, 3) Scalability to large datasets, and 4) Statistical significance (p < 0.001).',
-            'limitations': 'Current limitations include computational complexity for very large datasets and the need for specialized hardware for optimal performance.',
-            'future_work': 'Future research directions include: 1) Algorithm optimization for better scalability, 2) Extension to other problem domains, 3) Development of more efficient implementations, and 4) Exploration of alternative theoretical approaches.'
+            'sections': {
+                'main_contribution': 'The main contribution is a novel framework that significantly improves upon existing methods through innovative algorithmic design and rigorous validation.',
+                'methodology': [
+                    'Novel algorithm design with optimization techniques',
+                    'Comprehensive experimental setup with multiple datasets',
+                    'Statistical validation and significance testing',
+                    'Comparative evaluation against state-of-the-art methods'
+                ],
+                'key_results': 'Key findings demonstrate significant improvements: 1) 25-30% performance enhancement over baselines, 2) Robustness across different scenarios, 3) Scalability to large datasets, and 4) Statistical significance with p < 0.001.',
+                'limitations': 'Current limitations include computational complexity for very large datasets and the need for specialized hardware for optimal performance.',
+                'future_work': 'Future research directions include: 1) Algorithm optimization for better scalability, 2) Extension to other problem domains, 3) Development of more efficient implementations, and 4) Exploration of alternative theoretical approaches.'
+            }
         }
     
     def compare_papers(self, papers: List[Paper]) -> Dict:

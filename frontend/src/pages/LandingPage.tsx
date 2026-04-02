@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, FileText, Network, Zap, ArrowRight, CheckCircle, Sparkles, BookOpen, TrendingUp } from 'lucide-react';
+import { BrainCircuit, FileText, Network, Zap, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();

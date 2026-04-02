@@ -1,254 +1,237 @@
-import { useState, useRef, type DragEvent, type ChangeEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, Link as LinkIcon, FileText, ArrowRight, Map as MapIcon, BrainCircuit, Loader2, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BrainCircuit, BookOpen, BarChart3, Users, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useUploadPDF, useUploadArxiv, usePaperPolling } from '../hooks/usePapers';
-import type { Paper } from '../services/papers';
+import { useSimpleTheme } from '../contexts/SimpleThemeContext';
 
 const Dashboard = () => {
-  const [dragActive, setDragActive] = useState(false);
-  const [arxivLink, setArxivLink] = useState('');
-  const [uploadedPaperId, setUploadedPaperId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { theme } = useSimpleTheme();
+  const [uploadedPaperId] = useState<string | null>(() => {
+    return localStorage.getItem('uploadedPaperId') || null;
+  });
 
-  const uploadPDF = useUploadPDF();
-  const uploadArxiv = useUploadArxiv();
-  
-  const { data: paperStatus } = usePaperPolling(
-    uploadedPaperId || '',
-    !!uploadedPaperId
-  ) as { data: Paper | undefined };
-
-  const uploadState = uploadedPaperId
-    ? paperStatus?.status === 'ready'
-      ? 'success'
-      : paperStatus?.status === 'failed'
-      ? 'error'
-      : 'processing'
-    : uploadPDF.isPending || uploadArxiv.isPending
-    ? 'uploading'
-    : 'idle';
-
-  const progress = uploadState === 'uploading' ? 25 : 
-                   uploadState === 'processing' ? (paperStatus?.extraction_progress || 50) : 
-                   uploadState === 'success' ? 100 : 0;
-
-  const handleDrag = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+  const features = [
+    {
+      icon: BrainCircuit,
+      title: 'AI-Powered Analysis',
+      description: 'Get intelligent insights from your research papers',
+      color: theme.primary,
+      path: '/upload'
+    },
+    {
+      icon: BookOpen,
+      title: 'Smart Library',
+      description: 'Organize and access your research collection',
+      color: theme.primary,
+      path: '/library'
+    },
+    {
+      icon: BarChart3,
+      title: 'Topic Clustering',
+      description: 'Discover patterns and relationships in your research',
+      color: '#10b981',
+      path: '/clusters'
+    },
+    {
+      icon: Users,
+      title: 'Collaboration',
+      description: 'Work together with your research team',
+      color: '#f59e0b',
+      path: '/history'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Analytics',
+      description: 'Track your research progress and impact',
+      color: '#8b5cf6',
+      path: '/history'
     }
-  };
+  ];
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      uploadPDF.mutate(file, {
-        onSuccess: (data) => {
-          setUploadedPaperId(data.id);
-        },
-      });
+  const stats = [
+    {
+      label: 'Total Papers',
+      value: '24',
+      change: '+12%',
+      icon: BookOpen
+    },
+    {
+      label: 'Active Projects',
+      value: '8',
+      change: '+25%',
+      icon: BrainCircuit
+    },
+    {
+      label: 'Collaborations',
+      value: '156',
+      change: '+8%',
+      icon: Users
+    },
+    {
+      label: 'Citations',
+      value: '1,247',
+      change: '+18%',
+      icon: TrendingUp
     }
-  };
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      uploadPDF.mutate(file, {
-        onSuccess: (data) => {
-          setUploadedPaperId(data.id);
-        },
-      });
-    }
-  };
-
-  const handleUrlSubmit = () => {
-    if (arxivLink.trim()) {
-      uploadArxiv.mutate(arxivLink, {
-        onSuccess: (data) => {
-          setUploadedPaperId(data.id);
-          setArxivLink('');
-        },
-      });
-    }
-  };
-
-  if (uploadState === 'success' && uploadedPaperId) {
-    setTimeout(() => {
-      navigate(`/chat/${uploadedPaperId}`);
-    }, 1000);
-  }
+  ];
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center justify-center p-8 relative z-10 overflow-y-auto">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-10 mt-10"
-      >
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-text-primary mb-4 tracking-tight">
-          Analyze Academic Papers with <span className="gradient-text">AI Precision</span>
-        </h1>
-        <p className="text-text-secondary text-lg max-w-2xl mx-auto">
-          Upload PDFs, paste arXiv links, and instantly generate structured insights, citation graphs, and multi-paper comparisons.
-        </p>
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="w-full max-w-3xl bg-white rounded-3xl p-8 shadow-xl border border-border"
-      >
-        <AnimatePresence mode="wait">
-          {uploadState === 'idle' ? (
-            <motion.div
-              key="idle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                className="hidden" 
-                accept="application/pdf" 
-                multiple 
-              />
-              <div 
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl py-14 px-6 transition-all duration-300 ease-in-out cursor-pointer ${
-                  dragActive 
-                    ? 'border-primary-500 bg-primary-500/10 scale-[1.02]' 
-                    : 'border-border hover:border-text-muted hover:bg-surface-hover/30'
-                }`}
-              >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-secondary flex items-center justify-center shadow-lg mb-4 hover:scale-110 transition-transform">
-                  <UploadCloud className="text-white" size={28} />
-                </div>
-                <h3 className="text-xl font-semibold text-text-primary mb-2">Drag & Drop research papers here</h3>
-                <p className="text-sm text-text-muted mb-6">Supports PDF formats up to 10MB. Max 5 papers simultaneously.</p>
-                <button className="px-6 py-2.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white font-medium transition-colors shadow-lg pointer-events-none">
-                  Browse Files
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 my-8">
-                <div className="flex-1 h-px bg-border"></div>
-                <span className="text-xs uppercase font-bold text-text-muted tracking-widest">OR IMPORT SECURELY FROM</span>
-                <div className="flex-1 h-px bg-border"></div>
-              </div>
-
-              <div className="flex bg-white border-2 border-border rounded-xl px-2 py-2 focus-within:border-primary-500 transition-colors shadow-sm">
-                <div className="flex items-center pl-3 pr-2 border-r border-border text-text-muted">
-                  <LinkIcon size={18} />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Paste arXiv URL, DOI, or Semantic Scholar link..." 
-                  className="flex-1 bg-transparent border-none outline-none px-4 text-text-primary placeholder:text-text-muted"
-                  value={arxivLink}
-                  onChange={(e) => setArxivLink(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                />
-                <button 
-                  onClick={handleUrlSubmit}
-                  className="p-2 ml-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors"
-                >
-                  <ArrowRight size={20} />
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="uploading"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="py-12 flex flex-col items-center justify-center"
-            >
-              {uploadState === 'success' ? (
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-secondary mb-4">
-                  <CheckCircle size={64} />
-                </motion.div>
-              ) : (
-                <Loader2 size={48} className="text-primary-500 animate-spin mb-6" />
-              )}
-              
-              <h3 className="text-xl font-semibold text-text-primary mb-2">
-                {uploadState === 'uploading' ? 'Uploading Document...' : 
-                 uploadState === 'processing' ? 
-                   (paperStatus?.status === 'extracting' ? 'Extracting Text from PDF...' :
-                    paperStatus?.status === 'chunking' ? 'Creating Text Chunks...' :
-                    paperStatus?.status === 'embedding' ? 'Generating AI Embeddings...' :
-                    'Processing Document...') :
-                 uploadState === 'error' ? 'Processing Failed' :
-                 'Ready! Redirecting...'}
-              </h3>
-              
-              {uploadState === 'error' && paperStatus?.processing_error && (
-                <p className="text-sm text-red-600 mb-4">{paperStatus.processing_error}</p>
-              )}
-              
-              <div className="w-full max-w-md mt-6">
-                <div className="flex justify-between text-xs text-text-muted mb-2 font-medium">
-                  <span>{Math.round(progress)}% Complete</span>
-                  <span>
-                    {uploadState === 'processing' ? 
-                      (paperStatus?.status === 'extracting' ? 'PDF Processing' :
-                       paperStatus?.status === 'chunking' ? 'Text Chunking' :
-                       paperStatus?.status === 'embedding' ? 'AI Embeddings' :
-                       'Processing') : 
-                      uploadState === 'uploading' ? 'File Upload' : 
-                      'Complete'}
-                  </span>
-                </div>
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden border border-border">
-                  <motion.div 
-                    className="h-full bg-gradient-to-r from-primary-600 to-secondary"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ ease: "linear", duration: 0.3 }}
-                  />
-                </div>
-                {paperStatus?.chunk_count !== undefined && paperStatus.chunk_count > 0 && (
-                  <p className="text-xs text-text-muted mt-2">
-                    Created {paperStatus.chunk_count} text chunks
-                    {paperStatus.total_pages && ` from {paperStatus.total_pages} pages`}
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
+    <div style={{ backgroundColor: theme.background, minHeight: '100vh' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className="flex flex-wrap items-center justify-center gap-4 mt-8 pb-8"
+        className="max-w-7xl mx-auto p-8"
       >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-border shadow-sm text-sm text-text-secondary hover:shadow-md transition-shadow">
-          <FileText size={16} className="text-primary-500"/> RAG Over Documents
+        {/* Header */}
+        <div className="text-center mb-12">
+          <motion.h1
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className="text-4xl font-bold mb-4"
+            style={{ color: theme.text }}
+          >
+            ResearchMind Dashboard
+          </motion.h1>
+          <p className="text-xl" style={{ color: theme.textSecondary }}>
+            Your intelligent research companion
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-border shadow-sm text-sm text-text-secondary hover:shadow-md transition-shadow">
-          <MapIcon size={16} className="text-secondary"/> Citation Graphs
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {features.map((feature, index) => (
+            <motion.button
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              onClick={() => navigate(feature.path)}
+              className="p-6 rounded-2xl border hover:shadow-lg transition-all hover:scale-105 text-left"
+              style={{
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                color: theme.text
+              }}
+            >
+              <div className="flex items-center mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: feature.color + '20' }}
+                >
+                  <feature.icon size={24} style={{ color: feature.color }} />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
+                {feature.title}
+              </h3>
+              <p className="text-sm" style={{ color: theme.textSecondary }}>
+                {feature.description}
+              </p>
+              <div className="flex items-center text-sm" style={{ color: feature.color }}>
+                <span>Get Started</span>
+                <ArrowRight size={16} className="ml-1" />
+              </div>
+            </motion.button>
+          ))}
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-border shadow-sm text-sm text-text-secondary hover:shadow-md transition-shadow">
-          <BrainCircuit size={16} className="text-purple-500"/> NLP Multi-Paper Comparison
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="p-6 rounded-2xl border"
+              style={{
+                backgroundColor: theme.surface,
+                borderColor: theme.border
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div 
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: theme.primary + '20' }}
+                >
+                  <stat.icon size={20} style={{ color: theme.primary }} />
+                </div>
+                <span 
+                  className="text-xs font-medium px-2 py-1 rounded"
+                  style={{ 
+                    backgroundColor: stat.change.startsWith('+') ? '#10b981' : '#ef4444',
+                    color: '#ffffff'
+                  }}
+                >
+                  {stat.change}
+                </span>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold" style={{ color: theme.text }}>
+                  {stat.value}
+                </div>
+                <div className="text-sm" style={{ color: theme.textSecondary }}>
+                  {stat.label}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Recent Activity */}
+        <div className="p-6 rounded-2xl border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+          <h2 className="text-xl font-semibold mb-6" style={{ color: theme.text }}>
+            Recent Activity
+          </h2>
+          <div className="space-y-4">
+            {[
+              { title: 'Paper uploaded successfully', time: '2 minutes ago', type: 'success' },
+              { title: 'New citation detected', time: '1 hour ago', type: 'info' },
+              { title: 'Analysis completed', time: '3 hours ago', type: 'success' }
+            ].map((activity, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center gap-4 p-4 rounded-lg"
+                style={{
+                  backgroundColor: theme.background,
+                  borderLeft: `3px solid ${activity.type === 'success' ? '#10b981' : activity.type === 'info' ? '#3b82f6' : '#f59e0b'}`
+                }}
+              >
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: activity.type === 'success' ? '#10b981' : activity.type === 'info' ? '#3b82f6' : '#f59e0b' }}
+                />
+                <div className="flex-1">
+                  <div className="font-medium" style={{ color: theme.text }}>
+                    {activity.title}
+                  </div>
+                  <div className="text-sm" style={{ color: theme.textSecondary }}>
+                    {activity.time}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Upload CTA */}
+        <div className="text-center">
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => navigate('/upload')}
+            className="px-8 py-4 rounded-xl text-lg font-semibold transition-all hover:scale-105"
+            style={{
+              backgroundColor: theme.primary,
+              color: '#ffffff'
+            }}
+          >
+            Upload New Paper
+          </motion.button>
         </div>
       </motion.div>
     </div>

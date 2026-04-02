@@ -7,14 +7,6 @@ import { FaGithub } from 'react-icons/fa';
 const RegisterPage = () => {
   const navigate = useNavigate();
 
-  const handleGoogleSignup = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
-  };
-
-  const handleGithubSignup = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github`;
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full blur-[120px]" />
